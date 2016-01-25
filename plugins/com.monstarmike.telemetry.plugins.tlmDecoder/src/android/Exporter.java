@@ -323,8 +323,8 @@ public class Exporter {
             this.findDataPointsArray(flightData, "rx", 0, 2).put(lBlock);
             this.findDataPointsArray(flightData, "rx", 0, 3).put(rBlock);
 
-            this.findDataPointsArray(flightData, "rx", 0, 0).put(frameLossBlock);
-            this.findDataPointsArray(flightData, "rx", 1, 0).put(holdsBlock);
+            this.findDataPointsArray(flightData, "rx", 1, 0).put(frameLossBlock);
+            this.findDataPointsArray(flightData, "rx", 1, 1).put(holdsBlock);
 
             this.findDataPointsArray(flightData, "rx", 2, 0).put(voltsBlock);
         } else if (dataBlock instanceof StandardBlock) {
