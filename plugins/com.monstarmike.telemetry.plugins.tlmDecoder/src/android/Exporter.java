@@ -1,13 +1,21 @@
 package com.monstarmike.telemetry.plugins.tlmDecoder;
 
-import android.content.Context;
-import android.net.Uri;
-import android.util.Log;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Iterator;
+
+import org.joda.time.Duration;
+import org.joda.time.Period;
+import org.joda.time.format.PeriodFormatter;
+import org.joda.time.format.PeriodFormatterBuilder;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.monstarmike.tlmreader.Flight;
 import com.monstarmike.tlmreader.datablock.AirspeedBlock;
 import com.monstarmike.tlmreader.datablock.AltitudeBlock;
-import com.monstarmike.tlmreader.datablock.Block;
 import com.monstarmike.tlmreader.datablock.CurrentBlock;
 import com.monstarmike.tlmreader.datablock.DataBlock;
 import com.monstarmike.tlmreader.datablock.GForceBlock;
@@ -19,18 +27,9 @@ import com.monstarmike.tlmreader.datablock.StandardBlock;
 import com.monstarmike.tlmreader.datablock.VarioBlock;
 import com.monstarmike.tlmreader.datablock.VoltageBlock;
 
-import org.joda.time.Duration;
-import org.joda.time.Period;
-import org.joda.time.format.PeriodFormatter;
-import org.joda.time.format.PeriodFormatterBuilder;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Iterator;
+import android.content.Context;
+import android.net.Uri;
+import android.util.Log;
 
 public class Exporter {
     Iterable<Flight> flights;
