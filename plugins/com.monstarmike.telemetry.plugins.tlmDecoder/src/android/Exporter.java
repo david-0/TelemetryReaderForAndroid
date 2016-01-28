@@ -90,6 +90,7 @@ public class Exporter {
 
             Log.d(TAG, "Found flight. Going to do a full decode.");
             newFlightJO = this.buildFlight(true, flight);
+            Log.d(TAG, "Full decode done");
             if (newFlightJO != null) {
                 try {
                     newFlightJO.put("_id", joId);
