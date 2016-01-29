@@ -3,9 +3,14 @@ package com.monstarmike.telemetry.plugins.tlmDecoder;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.monstarmike.tlmreader.Flight;
+import com.monstarmike.tlmreader.IFlight;
 import com.monstarmike.tlmreader.TLMReader;
 
 import android.app.IntentService;
@@ -42,7 +47,7 @@ public class ExportService extends IntentService {
 
 			JSONObject decodedFlight = null;
 			try {
-				decodedFlight = this.buildFlight(fileUri, flightJO);
+				decodedFlight = this.decodeFlight(fileUri, flightJO);
 			} catch (Exception e) {
 				Log.e(TAG, "Error occurred decoding the flight!", e);
 			}
@@ -63,7 +68,7 @@ public class ExportService extends IntentService {
 			JSONObject file = null;
 
 			try {
-				file = this.parseFlights(uri);
+				file = this.decodeFlightDefinitions(uri);
 			} catch (IOException e) {
 				Log.e(TAG, "IO error when trying to get and parse the TLM data file.", e);
 			}
@@ -79,7 +84,7 @@ public class ExportService extends IntentService {
 		}
 	}
 
-	private JSONObject buildFlight(Uri uri, JSONObject flightJO) {
+	private JSONObject decodeFlight(Uri uri, JSONObject flightJO) throws IOException {
 
 		if (uri == null) {
 			Log.w(TAG, "Returning the default flight object that was passed in.");
@@ -99,33 +104,46 @@ public class ExportService extends IntentService {
 			return flightJO;
 		}
 
-		final TLMReader reader = parseFile(inputStream);
-		if (!reader.hasFlights()) {
-			Log.w(TAG, "Returning the default flight object that was passed in.");
-			return flightJO;
+		int joId = 0;
+		try {
+			joId = flightJO.getInt("_id");
+			Log.d(TAG, "FlightId: " + joId);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+		
+		final TLMReader reader = new TLMReader();
+		final Flight flight = reader.parseFlight(inputStream, joId);
 
-		Exporter exporter = new Exporter(uri, reader, this.getApplicationContext());
-		return exporter.exportFlightData(flightJO);
+		Exporter exporter = new Exporter(uri, this.getApplicationContext());
+		Log.d(TAG, "Found flight. Going to do a full decode.");
+		JSONObject exportFlightData = exporter.exportFlightData(flight);
+		Log.d(TAG, "Full decode done");
+		if (exportFlightData != null) {
+			try {
+				exportFlightData.put("_id", joId);
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
+		return exportFlightData;
+
 	}
 
-	private JSONObject parseFlights(Uri uri) throws IOException {
+	private JSONObject decodeFlightDefinitions(Uri uri) throws IOException {
 		InputStream inputStream = this.getApplicationContext().getContentResolver().openInputStream(uri);
-		TLMReader reader = parseFile(inputStream);
-		Exporter exporter = new Exporter(uri, reader, this.getApplicationContext());
-		JSONObject file = exporter.exportFlights();
-		return file;
-	}
-
-	private TLMReader parseFile(InputStream inputStream) {
 		Log.d(TAG, "Instantiate TLMReader.");
+		List<IFlight> flights = new ArrayList<IFlight>();
 		final TLMReader reader = new TLMReader();
 		try {
-			reader.Read(inputStream);
+			flights = reader.parseFlightDefinitions(inputStream);
 		} catch (final IOException e) {
 			Log.w(TAG, "Unable to read the input stream.", e);
 		}
 		Log.d(TAG, "Read bytes: " + reader.getNumberOfBytesRead());
-		return reader;
+		Exporter exporter = new Exporter(uri, this.getApplicationContext());
+		JSONObject file = exporter.exportFlightDefintions(flights);
+		return file;
 	}
 }
