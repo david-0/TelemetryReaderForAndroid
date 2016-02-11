@@ -102,10 +102,12 @@ angular.module('telemetryReaderForAndroid.controllers', ['telemetryReaderForAndr
         if (chartSeriesTypes[0].tooltip) {
           canvasJSChartOptions['toolTip'] = chartSeriesTypes[0].tooltip;
         }
-        canvasJSChartOptions['data'] = chartSeriesTypes[0].data;
-        _.forEach(canvasJSChartOptions['data'], function (dataSet) {
+        canvasJSChartOptions['data'] = [];
+        _.forEach(chartSeriesTypes[0].data, function (dataSet) {
+          console.log('data set series 1', dataSet);
           dataSet['axisYType'] = 'primary';
-        })
+          canvasJSChartOptions['data'].push(dataSet);
+        });
 
         console.log('canvasJSChartOptions - 0', canvasJSChartOptions);
 
