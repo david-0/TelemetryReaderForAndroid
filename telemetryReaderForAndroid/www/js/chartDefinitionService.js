@@ -367,7 +367,7 @@ angular.module('telemetryReaderForAndroid.services')
                      {
                        "selected": true,
                        "axis": {
-                         "title": "Temperature",
+                         "title": "Temperature in °F",
                          "labelFormatter": function (e) {
                            return e.value;
                          },
