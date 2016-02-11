@@ -3,7 +3,6 @@ package com.monstarmike.telemetry.plugins.tlmDecoder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Iterator;
 import java.util.List;
 
 import org.joda.time.Duration;
@@ -84,20 +83,21 @@ public class Exporter {
 			e.printStackTrace();
 		}
 
-		Iterator<HeaderBlock> headerBlockIterator = flight.get_headerBlocks();
-		while (headerBlockIterator.hasNext()) {
-			HeaderBlock headerBlock = headerBlockIterator.next();
+		for (HeaderBlock headerBlock : flight.getHeaderBlocks()) {
 			try {
 				this.handleHeaderBlock(newFlightJO, headerBlock);
 			} catch (JSONException e) {
 				e.printStackTrace();
 			}
 		}
-		Iterator<DataBlock> dataBlockIterator = flight.get_dataBlocks();
-		while (dataBlockIterator.hasNext()) {
-			DataBlock dataBlock = dataBlockIterator.next();
+		int i = 0;
+		for (DataBlock dataBlock : flight.getDataBlocks()) {
+			if (i % 100 == 0) {
+				Log.d(TAG, "DataBlock: " + i);
+			}
+			i++;
 			try {
-				this.handleDataBlock(flightData, dataBlock);
+				this.handleDataBlock(flightData, dataBlock, flight);
 			} catch (JSONException e) {
 				Log.w(TAG, "JSON error when working with data block", e);
 			}
@@ -108,22 +108,20 @@ public class Exporter {
 	private JSONObject buildFlightDefinition(IFlight flight) {
 		JSONObject flightJO = new JSONObject();
 		try {
-			Duration flightDuration = flight.get_duration();
+			Duration flightDuration = flight.getDuration();
 			Period period = flightDuration.toPeriod();
 			PeriodFormatter hms = new PeriodFormatterBuilder().appendHours().appendSeparator(":").printZeroAlways()
 					.appendMinutes().appendSeparator(":").appendSecondsWithMillis().toFormatter();
 
 			flightJO.put("duration", hms.print(period));
 
-			Iterator<HeaderBlock> iterator = flight.get_headerBlocks();
-			while (iterator.hasNext()) {
-				HeaderBlock headerBlock = iterator.next();
+			for (HeaderBlock headerBlock : flight.getHeaderBlocks()) {
 				if (headerBlock instanceof HeaderNameBlock) {
 					HeaderNameBlock nameBlock = (HeaderNameBlock) headerBlock;
-					flightJO.put("name", nameBlock.get_modelName());
-					flightJO.put("modelNumber", nameBlock.get_modelNumber());
-					flightJO.put("bindInfo", nameBlock.get_bindInfo());
-					flightJO.put("modelType", nameBlock.get_modelType());
+					flightJO.put("name", nameBlock.getModelName());
+					flightJO.put("modelNumber", nameBlock.getModelNumber());
+					flightJO.put("bindInfo", nameBlock.getBindInfo());
+					flightJO.put("modelType", nameBlock.getModelType());
 				}
 			}
 		} catch (JSONException e) {
@@ -176,65 +174,63 @@ public class Exporter {
 		if (headerBlock instanceof HeaderNameBlock) {
 			HeaderNameBlock nameBlock = (HeaderNameBlock) headerBlock;
 			jsonHeaderBlock = new JSONObject();
-			jsonHeaderBlock.put("modelNumber", nameBlock.get_modelNumber());
-			jsonHeaderBlock.put("bindInfo", nameBlock.get_bindInfo());
-			jsonHeaderBlock.put("modelName", nameBlock.get_modelName());
-			jsonHeaderBlock.put("modelType", nameBlock.get_modelType());
+			jsonHeaderBlock.put("modelNumber", nameBlock.getModelNumber());
+			jsonHeaderBlock.put("bindInfo", nameBlock.getBindInfo());
+			jsonHeaderBlock.put("modelName", nameBlock.getModelName());
+			jsonHeaderBlock.put("modelType", nameBlock.getModelType());
+		} else {
+			return;
 		}
 
-		if (jsonHeaderBlock == null)
-			return;
-	
 		if (!jsonFlight.has("headers")) {
 			jsonFlight.put("headers", new JSONArray());
 		}
 		jsonFlight.getJSONArray("headers").put(jsonHeaderBlock);
 	}
 
-	void handleDataBlock(JSONObject flightData, DataBlock dataBlock) throws JSONException {
+	void handleDataBlock(JSONObject flightData, DataBlock dataBlock, Flight flight) throws JSONException {
 		if (dataBlock instanceof AirspeedBlock) {
-
 		} else if (dataBlock instanceof AltitudeBlock) {
 			JSONObject jsonBlock = new JSONObject();
-			jsonBlock.put("x", dataBlock.get_timestamp());
-			jsonBlock.put("y", ((AltitudeBlock) dataBlock).get_altitudeInTenthsOfAMeter());
+			jsonBlock.put("x", dataBlock.getTimestamp());
+			jsonBlock.put("y", ((AltitudeBlock) dataBlock).getAltitudeInTenthOfMeter());
 
 			this.findDataPointsArray(flightData, "altitude", 0, 0).put(jsonBlock);
 		} else if (dataBlock instanceof CurrentBlock) {
 			JSONObject jsonBlock = new JSONObject();
-			jsonBlock.put("x", dataBlock.get_timestamp());
+			jsonBlock.put("x", dataBlock.getTimestamp());
 
 			CurrentBlock currentBlock = (CurrentBlock) dataBlock;
-			jsonBlock.put("y", currentBlock.get_Current());
+			jsonBlock.put("y", currentBlock.getCurrent());
 
 			this.findDataPointsArray(flightData, "current", 0, 0).put(jsonBlock);
 		} else if (dataBlock instanceof GForceBlock) {
 			JSONObject jsonBlock = new JSONObject();
-			jsonBlock.put("x", dataBlock.get_timestamp());
+			jsonBlock.put("x", dataBlock.getTimestamp());
 
 			GForceBlock gfBlock = (GForceBlock) dataBlock;
-			jsonBlock.put("maxX", gfBlock.get_maxX());
-			jsonBlock.put("maxY", gfBlock.get_maxY());
-			jsonBlock.put("maxZ", gfBlock.get_maxZ());
-			jsonBlock.put("x", gfBlock.get_x());
-			jsonBlock.put("y", gfBlock.get_y());
-			jsonBlock.put("z", gfBlock.get_z());
-			jsonBlock.put("minZ", gfBlock.get_minZ());
+			jsonBlock.put("maxX", gfBlock.getMaxXInHunderthOfG());
+			jsonBlock.put("maxY", gfBlock.getMaxYInHunderthOfG());
+			jsonBlock.put("maxZ", gfBlock.getMaxZInHunderthOfG());
+			jsonBlock.put("x", gfBlock.getXInHunderthOfG());
+			jsonBlock.put("y", gfBlock.getYInHunderthOfG());
+			jsonBlock.put("z", gfBlock.getZInHunderthOfG());
+			jsonBlock.put("minZ", gfBlock.getMinZInHunderthOfG());
 
 		} else if (dataBlock instanceof PowerboxBlock) {
 			JSONObject v1Block = new JSONObject(), v2Block = new JSONObject(), cap1Block = new JSONObject(),
 					cap2Block = new JSONObject();
 
-			v1Block.put("x", dataBlock.get_timestamp());
-			v2Block.put("x", dataBlock.get_timestamp());
-			cap1Block.put("x", dataBlock.get_timestamp());
-			cap2Block.put("x", dataBlock.get_timestamp());
+			v1Block.put("x", dataBlock.getTimestamp());
+			v2Block.put("x", dataBlock.getTimestamp());
+			cap1Block.put("x", dataBlock.getTimestamp());
+			cap2Block.put("x", dataBlock.getTimestamp());
 
 			PowerboxBlock pbBlock = (PowerboxBlock) dataBlock;
-			cap1Block.put("y", pbBlock.get_capacityOne());
-			cap2Block.put("y", pbBlock.get_capacityTwo());
-			v1Block.put("y", pbBlock.get_voltageOne());
-			v2Block.put("y", pbBlock.get_voltageTwo());
+			cap1Block.put("y", pbBlock.getCapacityOneInmAh());
+			cap2Block.put("y", pbBlock.getCapacityTwoInmAh());
+			v1Block.put("y", pbBlock.getVoltageOneInHunderthOfVolts());
+			v2Block.put("y", pbBlock.getVoltageTwoInHunderthOfVolts());
 
 			this.findDataPointsArray(flightData, "powerbox", 0, 0).put(v1Block);
 			this.findDataPointsArray(flightData, "powerbox", 0, 1).put(v2Block);
@@ -247,23 +243,23 @@ public class Exporter {
 					rBlock = new JSONObject(), frameLossBlock = new JSONObject(), holdsBlock = new JSONObject(),
 					voltsBlock = new JSONObject();
 
-			aBlock.put("x", dataBlock.get_timestamp());
-			bBlock.put("x", dataBlock.get_timestamp());
-			lBlock.put("x", dataBlock.get_timestamp());
-			rBlock.put("x", dataBlock.get_timestamp());
-			frameLossBlock.put("x", dataBlock.get_timestamp());
-			holdsBlock.put("x", dataBlock.get_timestamp());
-			voltsBlock.put("x", dataBlock.get_timestamp());
+			aBlock.put("x", dataBlock.getTimestamp());
+			bBlock.put("x", dataBlock.getTimestamp());
+			lBlock.put("x", dataBlock.getTimestamp());
+			rBlock.put("x", dataBlock.getTimestamp());
+			frameLossBlock.put("x", dataBlock.getTimestamp());
+			holdsBlock.put("x", dataBlock.getTimestamp());
+			voltsBlock.put("x", dataBlock.getTimestamp());
 
-			aBlock.put("y", rxBlock.get_a());
-			bBlock.put("y", rxBlock.get_b());
-			lBlock.put("y", rxBlock.get_l());
-			rBlock.put("y", rxBlock.get_r());
+			aBlock.put("y", rxBlock.getA());
+			bBlock.put("y", rxBlock.getB());
+			lBlock.put("y", rxBlock.getL());
+			rBlock.put("y", rxBlock.getR());
 
-			frameLossBlock.put("y", rxBlock.get_frameLoss());
-			holdsBlock.put("y", rxBlock.get_holds());
+			frameLossBlock.put("y", rxBlock.getFrameLoss());
+			holdsBlock.put("y", rxBlock.getHolds());
 
-			voltsBlock.put("y", rxBlock.get_volts());
+			voltsBlock.put("y", rxBlock.getVoltageInHunderthOfVolts());
 
 			this.findDataPointsArray(flightData, "rx", 0, 0).put(aBlock);
 			this.findDataPointsArray(flightData, "rx", 0, 1).put(bBlock);
@@ -277,19 +273,24 @@ public class Exporter {
 		} else if (dataBlock instanceof StandardBlock) {
 			StandardBlock standard = (StandardBlock) dataBlock;
 
-			JSONObject rpmBlock = new JSONObject(), tempBlock = new JSONObject(), voltBlock = new JSONObject();
-
-			rpmBlock.put("x", dataBlock.get_timestamp());
-			tempBlock.put("x", dataBlock.get_timestamp());
-			voltBlock.put("x", dataBlock.get_timestamp());
-
-			rpmBlock.put("y", standard.get_rpm());
-			tempBlock.put("y", standard.get_temperature());
-			voltBlock.put("y", standard.get_volt());
-
-			this.findDataPointsArray(flightData, "standard", 0, 0).put(rpmBlock);
-			this.findDataPointsArray(flightData, "standard", 1, 0).put(tempBlock);
-			this.findDataPointsArray(flightData, "standard", 2, 0).put(voltBlock);
+			if (flight.hasRpmHeader() && standard.hasRpmSensor()) {
+				JSONObject rpmBlock = new JSONObject();
+				rpmBlock.put("x", dataBlock.getTimestamp());
+				rpmBlock.put("y", standard.getRpm());
+				this.findDataPointsArray(flightData, "standard", 0, 0).put(rpmBlock);
+			}
+			if (standard.hasTemperatureSensor()) {
+				JSONObject tempBlock = new JSONObject();
+				tempBlock.put("x", dataBlock.getTimestamp());
+				this.findDataPointsArray(flightData, "standard", 1, 0).put(tempBlock);
+				tempBlock.put("y", standard.getTemperatureInGradFahrenheit());
+			}
+			if (standard.hasVoltageSensor()) {
+				JSONObject voltBlock = new JSONObject();
+				voltBlock.put("y", standard.getVoltageInHunderthOfVolts());
+				voltBlock.put("x", dataBlock.getTimestamp());
+				this.findDataPointsArray(flightData, "standard", 2, 0).put(voltBlock);
+			}
 
 		} else if (dataBlock instanceof VarioBlock) {
 			// VarioBlock varioBlock = (VarioBlock) dataBlock;
