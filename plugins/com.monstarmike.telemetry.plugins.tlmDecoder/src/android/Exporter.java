@@ -273,19 +273,19 @@ public class Exporter {
 		} else if (dataBlock instanceof StandardBlock) {
 			StandardBlock standard = (StandardBlock) dataBlock;
 
-			if (flight.hasRpmHeader() && standard.hasRpmSensor()) {
+			if (flight.hasRpmHeader() && standard.hasValidRpmData()) {
 				JSONObject rpmBlock = new JSONObject();
 				rpmBlock.put("x", dataBlock.getTimestamp());
 				rpmBlock.put("y", standard.getRpm());
 				this.findDataPointsArray(flightData, "standard", 0, 0).put(rpmBlock);
 			}
-			if (standard.hasTemperatureSensor()) {
+			if (standard.hasValidTemperatureData()) {
 				JSONObject tempBlock = new JSONObject();
 				tempBlock.put("x", dataBlock.getTimestamp());
 				this.findDataPointsArray(flightData, "standard", 1, 0).put(tempBlock);
 				tempBlock.put("y", standard.getTemperatureInGradFahrenheit());
 			}
-			if (standard.hasVoltageSensor()) {
+			if (standard.hasValidVoltageData()) {
 				JSONObject voltBlock = new JSONObject();
 				voltBlock.put("y", standard.getVoltageInHunderthOfVolts());
 				voltBlock.put("x", dataBlock.getTimestamp());
