@@ -371,7 +371,7 @@ angular.module('telemetryReaderForAndroid.services')
                          "labelFormatter": function (e) {
                            return e.value;
                          },
-                         "minimum": -100
+                         "minimum": 23
                        },
                        "tooltip": {
                          "contentFormatter": function (e) {
