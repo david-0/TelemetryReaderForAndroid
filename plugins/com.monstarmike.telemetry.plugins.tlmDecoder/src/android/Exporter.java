@@ -239,36 +239,47 @@ public class Exporter {
 		} else if (dataBlock instanceof RXBlock) {
 			RXBlock rxBlock = (RXBlock) dataBlock;
 
-			JSONObject aBlock = new JSONObject(), bBlock = new JSONObject(), lBlock = new JSONObject(),
-					rBlock = new JSONObject(), frameLossBlock = new JSONObject(), holdsBlock = new JSONObject(),
-					voltsBlock = new JSONObject();
+			if (rxBlock.hasValidDataLostPacketsReceiverA()) {
+				JSONObject aBlock = new JSONObject();
+				aBlock.put("x", dataBlock.getTimestamp());
+				aBlock.put("y", rxBlock.getLostPacketsReceiverA());
+				this.findDataPointsArray(flightData, "rx", 0, 0).put(aBlock);
+			}
+			if (rxBlock.hasValidDataLostPacketsReceiverB()) {
+				JSONObject bBlock = new JSONObject();
+				bBlock.put("x", dataBlock.getTimestamp());
+				bBlock.put("y", rxBlock.getLostPacketsReceiverB());
+				this.findDataPointsArray(flightData, "rx", 0, 1).put(bBlock);
+			}
+			if (rxBlock.hasValidDataLostPacketsReceiverL()) {
+				JSONObject lBlock = new JSONObject();
+				lBlock.put("x", dataBlock.getTimestamp());
+				lBlock.put("y", rxBlock.getLostPacketsReceiverL());
+				this.findDataPointsArray(flightData, "rx", 0, 2).put(lBlock);
+			}
+			if (rxBlock.hasValidDataLostPacketsReceiverR()) {
+				JSONObject rBlock = new JSONObject();
+				rBlock.put("x", dataBlock.getTimestamp());
+				rBlock.put("y", rxBlock.getLostPacketsReceiverR());
+				this.findDataPointsArray(flightData, "rx", 0, 3).put(rBlock);
+			}
 
-			aBlock.put("x", dataBlock.getTimestamp());
-			bBlock.put("x", dataBlock.getTimestamp());
-			lBlock.put("x", dataBlock.getTimestamp());
-			rBlock.put("x", dataBlock.getTimestamp());
-			frameLossBlock.put("x", dataBlock.getTimestamp());
-			holdsBlock.put("x", dataBlock.getTimestamp());
+			if (rxBlock.hasValidFrameLosssData()) {
+				JSONObject frameLossBlock = new JSONObject();
+				frameLossBlock.put("x", dataBlock.getTimestamp());
+				frameLossBlock.put("y", rxBlock.getFrameLoss());
+				this.findDataPointsArray(flightData, "rx", 1, 0).put(frameLossBlock);
+			}
+			if (rxBlock.hasValidHoldsData()) {
+				JSONObject holdsBlock = new JSONObject();
+				holdsBlock.put("x", dataBlock.getTimestamp());
+				holdsBlock.put("y", rxBlock.getHolds());
+				this.findDataPointsArray(flightData, "rx", 1, 1).put(holdsBlock);
+			}
+
+			JSONObject voltsBlock = new JSONObject();
 			voltsBlock.put("x", dataBlock.getTimestamp());
-
-			aBlock.put("y", rxBlock.getA());
-			bBlock.put("y", rxBlock.getB());
-			lBlock.put("y", rxBlock.getL());
-			rBlock.put("y", rxBlock.getR());
-
-			frameLossBlock.put("y", rxBlock.getFrameLoss());
-			holdsBlock.put("y", rxBlock.getHolds());
-
 			voltsBlock.put("y", rxBlock.getVoltageInHunderthOfVolts());
-
-			this.findDataPointsArray(flightData, "rx", 0, 0).put(aBlock);
-			this.findDataPointsArray(flightData, "rx", 0, 1).put(bBlock);
-			this.findDataPointsArray(flightData, "rx", 0, 2).put(lBlock);
-			this.findDataPointsArray(flightData, "rx", 0, 3).put(rBlock);
-
-			this.findDataPointsArray(flightData, "rx", 1, 0).put(frameLossBlock);
-			this.findDataPointsArray(flightData, "rx", 1, 1).put(holdsBlock);
-
 			this.findDataPointsArray(flightData, "rx", 2, 0).put(voltsBlock);
 		} else if (dataBlock instanceof StandardBlock) {
 			StandardBlock standard = (StandardBlock) dataBlock;
